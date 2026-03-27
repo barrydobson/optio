@@ -34,7 +34,7 @@ export class CodexAdapter implements AgentAdapter {
   readonly displayName = "OpenAI Codex";
 
   validateSecrets(availableSecrets: string[]): { valid: boolean; missing: string[] } {
-    const required = ["OPENAI_API_KEY", "GITHUB_TOKEN"];
+    const required = ["OPENAI_API_KEY"];
     const missing = required.filter((s) => !availableSecrets.includes(s));
     return { valid: missing.length === 0, missing };
   }
@@ -52,7 +52,7 @@ export class CodexAdapter implements AgentAdapter {
       OPTIO_BRANCH_NAME: `${TASK_BRANCH_PREFIX}${input.taskId}`,
     };
 
-    const requiredSecrets = ["OPENAI_API_KEY", "GITHUB_TOKEN"];
+    const requiredSecrets = ["OPENAI_API_KEY"];
     const setupFiles: AgentContainerConfig["setupFiles"] = [];
 
     // Write the task file into the worktree
