@@ -24,6 +24,9 @@ import {
   Send,
   AlertCircle,
   Eye,
+  Key,
+  Check,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +40,8 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const [sidebarTab, setSidebarTab] = useState<"pipeline" | "activity">("pipeline");
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [dependencies, setDependencies] = useState<any[]>([]);
+  const [tokenInput, setTokenInput] = useState("");
+  const [tokenSaving, setTokenSaving] = useState(false);
   const [dependents, setDependents] = useState<any[]>([]);
   const [showCreateSubtask, setShowCreateSubtask] = useState(false);
   const [newSubtask, setNewSubtask] = useState({
@@ -183,28 +188,30 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="shrink-0 p-4 border-b border-border bg-bg-card">
-        <div className="flex items-start justify-between gap-4 max-w-5xl mx-auto">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold truncate">{task.title}</h1>
-              <StateBadge state={task.state} />
-            </div>
-            <div className="flex items-center gap-4 mt-2 text-xs text-text-muted">
-              <span className="flex items-center gap-1">
-                <GitBranch className="w-3 h-3" />
-                {repoName}
-              </span>
-              <span className="flex items-center gap-1 capitalize">
-                <Bot className="w-3 h-3" />
-                {task.agentType.replace("-", " ")}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                {formatRelativeTime(task.createdAt)}
-              </span>
+        <div className="flex flex-col gap-3 max-w-5xl mx-auto">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-lg font-bold tracking-tight">{task.title}</h1>
+                <StateBadge state={task.state} />
+              </div>
+              <div className="flex items-center gap-4 mt-2 text-xs text-text-muted flex-wrap">
+                <span className="flex items-center gap-1">
+                  <GitBranch className="w-3 h-3" />
+                  {repoName}
+                </span>
+                <span className="flex items-center gap-1 capitalize">
+                  <Bot className="w-3 h-3" />
+                  {task.agentType.replace("-", " ")}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatRelativeTime(task.createdAt)}
+                </span>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {task.prUrl && (
               <a
                 href={task.prUrl}
@@ -335,20 +342,87 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                       <h3 className="text-sm font-medium text-error">{classified.title}</h3>
                       <p className="text-xs text-error/70 mt-0.5">{classified.description}</p>
                     </div>
-                    <div className="p-2.5 rounded-md bg-bg/50 border border-border">
-                      <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
-                        Suggested fix
+                    {classified.category === "auth" ? (
+                      <div className="space-y-2">
+                        <div className="p-2.5 rounded-md bg-bg/50 border border-border">
+                          <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">
+                            1. Copy your token
+                          </div>
+                          <div className="relative group">
+                            <pre className="text-[11px] text-text/80 whitespace-pre-wrap font-mono bg-bg-card rounded px-2.5 py-2 border border-border select-all break-all">
+                              {`security find-generic-password -s "Claude Code-credentials" -w | python3 -c "import sys,json; print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])" | pbcopy`}
+                            </pre>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  `security find-generic-password -s "Claude Code-credentials" -w | python3 -c "import sys,json; print(json.load(sys.stdin)['claudeAiOauth']['accessToken'])" | pbcopy`,
+                                );
+                                toast.success("Command copied");
+                              }}
+                              className="absolute top-1 right-1 p-1 rounded bg-bg-hover text-text-muted hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="p-2.5 rounded-md bg-bg/50 border border-border">
+                          <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1.5">
+                            2. Paste new token
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="password"
+                              value={tokenInput}
+                              onChange={(e) => setTokenInput(e.target.value)}
+                              placeholder="Paste token here"
+                              className="flex-1 px-2.5 py-1.5 rounded-md bg-bg border border-border text-xs font-mono focus:outline-none focus:border-primary"
+                            />
+                            <button
+                              onClick={async () => {
+                                if (!tokenInput.trim()) return;
+                                setTokenSaving(true);
+                                try {
+                                  await api.createSecret({
+                                    name: "CLAUDE_CODE_OAUTH_TOKEN",
+                                    value: tokenInput.trim(),
+                                  });
+                                  toast.success("Token updated");
+                                  setTokenInput("");
+                                } catch (err) {
+                                  toast.error("Failed to save token");
+                                }
+                                setTokenSaving(false);
+                              }}
+                              disabled={!tokenInput.trim() || tokenSaving}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-xs hover:bg-primary-hover disabled:opacity-50 btn-press transition-all"
+                            >
+                              {tokenSaving ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Key className="w-3 h-3" />
+                              )}
+                              Update
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                      <pre className="text-xs text-text/80 whitespace-pre-wrap font-mono">
-                        {classified.remedy}
-                      </pre>
-                    </div>
+                    ) : (
+                      <div className="p-2.5 rounded-md bg-bg/50 border border-border">
+                        <div className="text-[10px] uppercase tracking-wider text-text-muted mb-1">
+                          Suggested fix
+                        </div>
+                        <pre className="text-xs text-text/80 whitespace-pre-wrap font-mono">
+                          {classified.remedy}
+                        </pre>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       {classified.retryable && canRetry && (
                         <button
                           onClick={handleRetry}
                           disabled={actionLoading}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-xs hover:bg-primary-hover disabled:opacity-50"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary text-white text-xs hover:bg-primary-hover disabled:opacity-50 btn-press transition-all"
                         >
                           <RotateCcw className="w-3 h-3" />
                           Retry Task
@@ -590,7 +664,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                   <button
                     onClick={handleCreateSubtask}
                     disabled={actionLoading || !newSubtask.title.trim()}
-                    className="px-3 py-1 rounded-md bg-primary text-white text-xs hover:bg-primary-hover disabled:opacity-50 ml-auto"
+                    className="px-3 py-1 rounded-md bg-primary text-white text-xs hover:bg-primary-hover disabled:opacity-50 ml-auto btn-press transition-all"
                   >
                     Create & Queue
                   </button>
@@ -745,7 +819,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
         {/* Timeline sidebar */}
         {showTimeline && (
-          <div className="w-80 shrink-0 border-l border-border overflow-auto bg-bg-card flex flex-col">
+          <div className="hidden md:flex w-80 shrink-0 border-l border-border overflow-auto bg-bg-card flex-col">
             <div className="flex items-center gap-1 p-2 border-b border-border">
               <button
                 onClick={() => setSidebarTab("pipeline")}

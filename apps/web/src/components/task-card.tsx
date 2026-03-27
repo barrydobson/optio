@@ -39,7 +39,9 @@ export const TaskCard = React.memo(function TaskCard({ task, subtasks }: TaskCar
   return (
     <div
       onClick={() => router.push(`/tasks/${task.id}`)}
-      className="block rounded-xl border border-border/50 bg-bg-card hover:border-border-strong hover:bg-bg-card-hover hover:shadow-md transition-all duration-150 cursor-pointer overflow-hidden"
+      className={cn(
+        "block rounded-md border border-border bg-bg-card cursor-pointer overflow-hidden card-hover",
+      )}
     >
       <div className="p-5">
         {/* Top row: title + badges */}
@@ -64,7 +66,7 @@ export const TaskCard = React.memo(function TaskCard({ task, subtasks }: TaskCar
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {task.costUsd && (
-              <span className="text-[11px] text-text-muted/40 tabular-nums">
+              <span className="text-[10px] text-text-muted tabular-nums cost-pill px-2 py-0.5 rounded-full font-medium">
                 ${parseFloat(task.costUsd).toFixed(2)}
               </span>
             )}
@@ -111,7 +113,7 @@ export const TaskCard = React.memo(function TaskCard({ task, subtasks }: TaskCar
                   }, 2000);
                 }
               }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-colors shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-md text-xs bg-primary/10 text-primary hover:bg-primary/20 transition-all shrink-0 btn-press"
             >
               <RotateCcw className="w-3 h-3" />
               Retry
@@ -127,7 +129,7 @@ export const TaskCard = React.memo(function TaskCard({ task, subtasks }: TaskCar
               href={task.prUrl}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
               className="flex items-center gap-1 text-text-muted hover:text-text transition-colors"
             >
               PR #{prNumber}
@@ -144,7 +146,7 @@ export const TaskCard = React.memo(function TaskCard({ task, subtasks }: TaskCar
             <Link
               key={sub.id}
               href={`/tasks/${sub.id}`}
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors hover:bg-bg-hover",
                 sub.taskType === "review" ? "bg-info/5" : "bg-bg-card/50",

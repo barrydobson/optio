@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { api } from "@/lib/api-client";
 import { TaskCard } from "@/components/task-card";
+import { FadeIn, StaggerList, StaggerItem, AnimatedNumber } from "@/components/animated";
 import Link from "next/link";
 import { cn, formatRelativeTime } from "@/lib/utils";
 import {
@@ -36,6 +37,9 @@ import {
   Bot,
   Terminal,
   CircleDot,
+  GitMerge,
+  Eye,
+  ListChecks,
 } from "lucide-react";
 import { StateBadge } from "@/components/state-badge";
 
@@ -84,11 +88,13 @@ function formatK8sResource(value: string | undefined): string {
 
 interface TaskStats {
   total: number;
+  queued: number;
   running: number;
+  ci: number;
+  review: number;
   needsAttention: number;
-  prOpened: number;
-  completed: number;
   failed: number;
+  completed: number;
 }
 
 export default function OverviewPage() {
@@ -108,6 +114,12 @@ export default function OverviewPage() {
     sevenDay?: { utilization: number | null; resetsAt: string | null };
     sevenDaySonnet?: { utilization: number | null; resetsAt: string | null };
     sevenDayOpus?: { utilization: number | null; resetsAt: string | null };
+    extraUsage?: {
+      isEnabled: boolean;
+      monthlyLimit: number | null;
+      usedCredits: number | null;
+      utilization: number | null;
+    };
   } | null>(null);
   const [showMetrics, setShowMetrics] = useState(false);
   const [metricsAvailable, setMetricsAvailable] = useState<boolean | null>(null);
@@ -135,13 +147,24 @@ export default function OverviewPage() {
         setActiveSessions(sessionsRes.sessions);
         setActiveSessionCount(sessionsRes.activeCount);
         const tasks = tasksRes.tasks;
+        const prOpenedTasks = tasks.filter((t: any) => t.state === "pr_opened");
+        const ciCount = prOpenedTasks.filter((t: any) => {
+          const checks = t.prChecksStatus;
+          const review = t.prReviewStatus;
+          if (review && !["none", "pending"].includes(review)) return false;
+          return !checks || ["none", "pending", "failing"].includes(checks);
+        }).length;
+        const reviewCount = prOpenedTasks.length - ciCount;
         setTaskStats({
           total: tasks.length,
+          queued: tasks.filter((t: any) => ["pending", "queued", "provisioning"].includes(t.state))
+            .length,
           running: tasks.filter((t: any) => t.state === "running").length,
+          ci: ciCount,
+          review: reviewCount,
           needsAttention: tasks.filter((t: any) => t.state === "needs_attention").length,
-          prOpened: tasks.filter((t: any) => t.state === "pr_opened").length,
-          completed: tasks.filter((t: any) => t.state === "completed").length,
           failed: tasks.filter((t: any) => t.state === "failed").length,
+          completed: tasks.filter((t: any) => t.state === "completed").length,
         });
         setRecentTasks(tasks.slice(0, 5));
         setRepoCount(reposRes.repos.length);
@@ -193,8 +216,26 @@ export default function OverviewPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-text-muted">
-        <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading...
+      <div className="p-6 max-w-6xl mx-auto space-y-6">
+        <div className="h-8 w-40 skeleton-shimmer" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-24 skeleton-shimmer" />
+          ))}
+        </div>
+        <div className="h-16 skeleton-shimmer" />
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-20 skeleton-shimmer" />
+            ))}
+          </div>
+          <div className="space-y-2">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-12 skeleton-shimmer" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -239,7 +280,7 @@ export default function OverviewPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gradient">Overview</h1>
           <p className="text-sm text-text-muted mt-0.5">
             {taskStats?.running ?? 0} active {(taskStats?.running ?? 0) === 1 ? "task" : "tasks"}
             {activeSessionCount > 0 && (
@@ -259,38 +300,62 @@ export default function OverviewPage() {
         </div>
         <button
           onClick={refresh}
-          className="p-2 rounded-lg hover:bg-bg-hover text-text-muted transition-colors"
+          className="p-2 rounded-lg hover:bg-bg-hover text-text-muted transition-all btn-press hover:text-text"
         >
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          icon={Activity}
-          label="Running"
-          value={taskStats?.running ?? 0}
-          color="text-primary"
-        />
-        <StatCard
-          icon={AlertTriangle}
-          label="Attention"
-          value={taskStats?.needsAttention ?? 0}
-          color="text-warning"
-        />
-        <StatCard
-          icon={GitPullRequest}
-          label="PRs Open"
-          value={taskStats?.prOpened ?? 0}
-          color="text-success"
-        />
-        <StatCard
-          icon={CheckCircle}
-          label="Completed"
-          value={taskStats?.completed ?? 0}
-          color="text-success"
-        />
-      </div>
+      <Link href="/tasks" className="block">
+        <div className="rounded-md border border-border bg-bg-card px-6 py-5 flex flex-wrap justify-around items-center gap-y-4 card-hover cursor-pointer">
+          <PipelineStat
+            icon={ListChecks}
+            label="Queue"
+            value={taskStats?.queued ?? 0}
+            color="text-text-muted"
+          />
+          <PipelineArrow />
+          <PipelineStat
+            icon={Activity}
+            label="Running"
+            value={taskStats?.running ?? 0}
+            color="text-primary"
+            active={!!taskStats?.running}
+          />
+          <PipelineArrow />
+          <PipelineStat icon={GitMerge} label="CI" value={taskStats?.ci ?? 0} color="text-info" />
+          <PipelineArrow />
+          <PipelineStat
+            icon={Eye}
+            label="Review"
+            value={taskStats?.review ?? 0}
+            color="text-info"
+          />
+          <PipelineArrow />
+          <PipelineStat
+            icon={AlertTriangle}
+            label="Attention"
+            value={taskStats?.needsAttention ?? 0}
+            color="text-warning"
+            active={!!taskStats?.needsAttention}
+          />
+          <PipelineArrow />
+          <PipelineStat
+            icon={AlertTriangle}
+            label="Failed"
+            value={taskStats?.failed ?? 0}
+            color="text-error"
+            active={!!taskStats?.failed}
+          />
+          <PipelineArrow />
+          <PipelineStat
+            icon={CheckCircle}
+            label="Done"
+            value={taskStats?.completed ?? 0}
+            color="text-success"
+          />
+        </div>
+      </Link>
 
       {usage?.available && (
         <div className="rounded-xl border border-border/50 bg-bg-card p-4">
@@ -327,13 +392,25 @@ export default function OverviewPage() {
                 resetsAt={usage.sevenDayOpus.resetsAt}
               />
             )}
+            {usage.extraUsage?.isEnabled && usage.extraUsage.usedCredits != null && (
+              <UsageMeter
+                label="Extra Credits"
+                utilization={usage.extraUsage.utilization ?? 0}
+                resetsAt={null}
+                sublabel={
+                  usage.extraUsage.monthlyLimit != null
+                    ? `$${(usage.extraUsage.usedCredits / 100).toFixed(2)} / $${(usage.extraUsage.monthlyLimit / 100).toFixed(2)} spent`
+                    : `$${(usage.extraUsage.usedCredits / 100).toFixed(2)} spent`
+                }
+              />
+            )}
           </div>
         </div>
       )}
 
       <div className="rounded-xl border border-border/50 bg-bg-card overflow-hidden">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-4 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 p-4">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
             {nodes[0] && (
               <span className="flex items-center gap-1.5 text-text-muted font-mono border-r border-border pr-4 mr-1">
                 {nodes[0].name} <span className="text-text-muted/50">/ optio</span>
@@ -434,7 +511,7 @@ export default function OverviewPage() {
               </div>
             ) : metricsHistory.length > 1 ? (
               <>
-                <div className="grid grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                   <MiniChart
                     label="CPU"
                     data={metricsHistory.map((m) => m.cpuPercent ?? 0)}
@@ -595,7 +672,7 @@ export default function OverviewPage() {
                         <span className="font-mono text-xs font-medium truncate">{pod.name}</span>
                         {pod.isOptioManaged && (
                           <>
-                            <span className="text-[9px] px-1 py-0.5 rounded bg-primary/10 text-primary">
+                            <span className="text-[11px] px-1 py-0.5 rounded bg-primary/10 text-primary">
                               workspace
                             </span>
                             {repoPod && <CapacityIndicator repoPod={repoPod} />}
@@ -608,22 +685,22 @@ export default function OverviewPage() {
                           </>
                         )}
                         {pod.isInfra && (
-                          <span className="text-[9px] px-1 py-0.5 rounded bg-info/10 text-info">
+                          <span className="text-[11px] px-1 py-0.5 rounded bg-info/10 text-info">
                             infra
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-text-muted mt-1 ml-4">
+                      <div className="flex items-center gap-2 text-xs text-text-muted mt-1 ml-4">
                         <span className={color}>{pod.status}</span>
                         {repoPod && (
                           <>
                             <span className="flex items-center gap-0.5">
-                              <Activity className="w-2.5 h-2.5" />
+                              <Activity className="w-3 h-3" />
                               {repoPod.activeTaskCount ?? 0} running
                             </span>
                             {(repoPod.queuedTaskCount ?? 0) > 0 && (
                               <span className="flex items-center gap-0.5 text-warning">
-                                <Clock className="w-2.5 h-2.5" />
+                                <Clock className="w-3 h-3" />
                                 {repoPod.queuedTaskCount} queued
                               </span>
                             )}
@@ -631,13 +708,13 @@ export default function OverviewPage() {
                         )}
                         {pod.cpuMillicores != null && (
                           <span className="flex items-center gap-0.5">
-                            <Cpu className="w-2.5 h-2.5" />
+                            <Cpu className="w-3 h-3" />
                             {pod.cpuMillicores}m
                           </span>
                         )}
                         {pod.memoryMi != null && (
                           <span className="flex items-center gap-0.5">
-                            <HardDrive className="w-2.5 h-2.5" />
+                            <HardDrive className="w-3 h-3" />
                             {pod.memoryMi} Mi
                           </span>
                         )}
@@ -701,15 +778,15 @@ export default function OverviewPage() {
                           )}
                         />
                         <span className="text-xs font-medium">{event.reason}</span>
-                        <span className="text-[10px] text-text-muted font-mono">
+                        <span className="text-xs text-text-muted font-mono">
                           {event.involvedObject}
                         </span>
                         {event.count > 1 && (
-                          <span className="text-[10px] text-text-muted">x{event.count}</span>
+                          <span className="text-xs text-text-muted">x{event.count}</span>
                         )}
                         <span className="flex-1" />
                         {event.lastTimestamp && (
-                          <span className="text-[10px] text-text-muted/50">
+                          <span className="text-xs text-text-muted/50">
                             {formatRelativeTime(event.lastTimestamp)}
                           </span>
                         )}
@@ -720,9 +797,7 @@ export default function OverviewPage() {
                           <X className="w-3 h-3" />
                         </button>
                       </div>
-                      <p className="text-[10px] text-text-muted mt-1 ml-5 truncate">
-                        {event.message}
-                      </p>
+                      <p className="text-xs text-text-muted mt-1 ml-5 truncate">{event.message}</p>
                     </div>
                   );
                 })}
@@ -903,7 +978,7 @@ function QuickLink({
   return (
     <Link
       href={href}
-      className="group p-4 rounded-xl border border-border/50 bg-bg-card hover:border-primary/30 hover:bg-bg-card-hover transition-all"
+      className="group p-4 rounded-xl border border-border/50 bg-bg-card hover:border-primary/30 hover:bg-bg-card-hover transition-all card-hover"
     >
       <Icon className="w-5 h-5 text-text-muted group-hover:text-primary transition-colors mb-2" />
       <div className="text-sm font-medium text-text-heading">{label}</div>
@@ -937,7 +1012,7 @@ function EmptyState({
       {action && (
         <Link
           href={action.href}
-          className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-hover transition-colors shadow-sm"
+          className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-primary-hover transition-all btn-press shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25"
         >
           <Plus className="w-3.5 h-3.5" />
           {action.label}
@@ -967,34 +1042,90 @@ function StatCard({
     "text-error": "border-l-error/40",
     "text-info": "border-l-info/40",
   };
+  const gradientMap: Record<string, string> = {
+    "text-primary": "from-primary/[0.06] to-transparent",
+    "text-warning": "from-warning/[0.04] to-transparent",
+    "text-success": "from-success/[0.04] to-transparent",
+    "text-error": "from-error/[0.04] to-transparent",
+    "text-info": "from-info/[0.04] to-transparent",
+  };
   const accent = accentMap[color] ?? "border-l-primary/40";
+  const gradient = gradientMap[color] ?? "from-primary/[0.06] to-transparent";
 
   return (
     <div
       className={cn(
-        "p-4 rounded-xl border border-border/50 bg-bg-card relative overflow-hidden border-l-2 hover:bg-bg-card-hover transition-colors",
+        "p-4 rounded-xl border border-border/50 relative overflow-hidden border-l-2 card-hover bg-gradient-to-br",
         accent,
+        gradient,
       )}
     >
-      <Icon className={cn("w-8 h-8 absolute top-3 right-3 opacity-15", color)} />
-      <span className="text-xs font-medium uppercase tracking-wider text-text-muted">{label}</span>
-      <div className="mt-1.5">
-        <span className={cn("text-3xl font-semibold tabular-nums", value > 0 && color)}>
-          {value}
+      <Icon className={cn("w-8 h-8 absolute top-3 right-3 opacity-[0.07]", color)} />
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-text-muted/70">
+        {label}
+      </span>
+      <div className="mt-2">
+        <AnimatedNumber
+          value={value}
+          className={cn(
+            "text-3xl font-bold tabular-nums tracking-tight",
+            value > 0 ? color : "text-text-muted/40",
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PipelineStat({
+  icon: Icon,
+  label,
+  value,
+  color,
+  active,
+}: {
+  icon: any;
+  label: string;
+  value: number;
+  color: string;
+  active?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center gap-1.5 px-4 py-2 rounded-lg",
+        active && "bg-bg-hover/60",
+      )}
+    >
+      <span
+        className={cn("text-4xl font-bold tabular-nums", value > 0 ? color : "text-text-muted/30")}
+      >
+        {value}
+      </span>
+      <div className="flex items-center gap-1.5">
+        <Icon className={cn("w-3.5 h-3.5 shrink-0", value > 0 ? color : "text-text-muted/25")} />
+        <span className="text-xs text-text-muted/60 font-medium uppercase tracking-wider">
+          {label}
         </span>
       </div>
     </div>
   );
 }
 
+function PipelineArrow() {
+  return <span className="text-text-muted/20 text-lg self-center px-1">›</span>;
+}
+
 function UsageMeter({
   label,
   utilization,
   resetsAt,
+  sublabel,
 }: {
   label: string;
   utilization: number;
   resetsAt: string | null;
+  sublabel?: string;
 }) {
   const pct = Math.min(utilization, 100);
   const color = pct >= 80 ? "bg-error" : pct >= 50 ? "bg-warning" : "bg-primary";
@@ -1013,10 +1144,8 @@ function UsageMeter({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] font-medium text-text-muted">{label}</span>
-        <span className={cn("text-[11px] font-medium tabular-nums", textColor)}>
-          {pct.toFixed(0)}%
-        </span>
+        <span className="text-sm font-medium text-text-muted">{label}</span>
+        <span className={cn("text-sm font-medium tabular-nums", textColor)}>{pct.toFixed(0)}%</span>
       </div>
       <div className="h-1.5 rounded-full bg-border/50 overflow-hidden">
         <div
@@ -1024,10 +1153,15 @@ function UsageMeter({
           style={{ width: `${pct}%` }}
         />
       </div>
+      {sublabel && (
+        <div className="mt-1">
+          <span className="text-xs text-text-muted/50">{sublabel}</span>
+        </div>
+      )}
       {resetLabel && (
         <div className="flex items-center gap-1 mt-1">
-          <Clock className="w-2.5 h-2.5 text-text-muted/50" />
-          <span className="text-[10px] text-text-muted/50">resets in {resetLabel}</span>
+          <Clock className="w-3 h-3 text-text-muted/50" />
+          <span className="text-xs text-text-muted/50">resets in {resetLabel}</span>
         </div>
       )}
     </div>
@@ -1081,7 +1215,24 @@ function MiniChart({
     y: h - ((v - min) / range) * h,
   }));
 
-  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  // Build smooth cubic bezier curve through points (monotone spline)
+  const buildSmoothPath = (pts: { x: number; y: number }[]) => {
+    if (pts.length < 2) return "";
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(i - 1, 0)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(i + 2, pts.length - 1)];
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+  };
+  const linePath = buildSmoothPath(points);
   const areaPath = `${linePath} L ${w} ${h} L 0 ${h} Z`;
 
   return (
@@ -1102,6 +1253,13 @@ function MiniChart({
         </defs>
         <path d={areaPath} fill={`url(#grad-${label})`} />
         <path d={linePath} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" />
+        <circle
+          cx={points[points.length - 1].x}
+          cy={points[points.length - 1].y}
+          r="4"
+          fill={color}
+          opacity="0.2"
+        />
         <circle
           cx={points[points.length - 1].x}
           cy={points[points.length - 1].y}

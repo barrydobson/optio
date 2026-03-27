@@ -21,8 +21,8 @@ const updateRepoSchema = z.object({
   claudeContextWindow: z.string().optional(),
   claudeThinking: z.boolean().optional(),
   claudeEffort: z.string().optional(),
-  maxTurnsCoding: z.number().int().min(1).max(1000).optional(),
-  maxTurnsReview: z.number().int().min(1).max(100).optional(),
+  maxTurnsCoding: z.number().int().min(1).max(10000).optional(),
+  maxTurnsReview: z.number().int().min(1).max(10000).optional(),
   autoResume: z.boolean().optional(),
   maxConcurrentTasks: z.number().int().min(1).max(50).optional(),
   maxPodInstances: z.number().int().min(1).max(20).optional(),
@@ -39,6 +39,7 @@ const updateRepoSchema = z.object({
     .array(z.enum(["completed", "failed", "needs_attention", "pr_opened"]))
     .optional(),
   slackEnabled: z.boolean().optional(),
+  networkPolicy: z.enum(["unrestricted", "restricted"]).optional(),
 });
 
 export async function repoRoutes(app: FastifyInstance) {
@@ -61,9 +62,17 @@ export async function repoRoutes(app: FastifyInstance) {
 
   app.post("/api/repos", async (req, reply) => {
     const body = createRepoSchema.parse(req.body);
+    const workspaceId = req.user?.workspaceId ?? null;
+
+    // Check for duplicate
+    const existing = await repoService.getRepoByUrl(body.repoUrl, workspaceId);
+    if (existing) {
+      return reply.status(409).send({ error: "This repository has already been added" });
+    }
+
     const repo = await repoService.createRepo({
       ...body,
-      workspaceId: req.user?.workspaceId ?? null,
+      workspaceId,
     });
 
     // Auto-detect image preset and test command
