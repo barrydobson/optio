@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { db } from "../db/client.js";
 import { repos, tasks } from "../db/schema.js";
 import { eq, and } from "drizzle-orm";
-import { retrieveSecret } from "../services/secret-service.js";
+import { getGitHubToken } from "../services/github-token-service.js";
 import { logger } from "../logger.js";
 
 export async function issueRoutes(app: FastifyInstance) {
@@ -10,10 +10,8 @@ export async function issueRoutes(app: FastifyInstance) {
   app.get("/api/issues", async (req, reply) => {
     const query = req.query as { repoId?: string; state?: string };
 
-    let githubToken: string;
-    try {
-      githubToken = await retrieveSecret("GITHUB_TOKEN");
-    } catch {
+    const githubToken = await getGitHubToken({ userId: req.user!.id }).catch(() => null);
+    if (!githubToken) {
       return reply.status(503).send({ issues: [], error: "No GitHub token configured" });
     }
 
@@ -144,10 +142,8 @@ export async function issueRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: "Repo not found" });
     }
 
-    let githubToken: string;
-    try {
-      githubToken = await retrieveSecret("GITHUB_TOKEN");
-    } catch {
+    const githubToken = await getGitHubToken({ userId: req.user!.id }).catch(() => null);
+    if (!githubToken) {
       return reply.status(503).send({ error: "No GitHub token configured" });
     }
 
@@ -201,6 +197,7 @@ export async function issueRoutes(app: FastifyInstance) {
       ticketSource: "github",
       ticketExternalId: String(body.issueNumber),
       metadata: { issueUrl: `https://github.com/${owner}/${repoName}/issues/${body.issueNumber}` },
+      createdBy: req.user?.id,
       workspaceId: req.user?.workspaceId ?? null,
     });
 

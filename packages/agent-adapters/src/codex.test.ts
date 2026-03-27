@@ -15,28 +15,16 @@ describe("CodexAdapter", () => {
   });
 
   describe("validateSecrets", () => {
-    it("returns valid when both secrets are present", () => {
-      const result = adapter.validateSecrets(["OPENAI_API_KEY", "GITHUB_TOKEN"]);
+    it("returns valid when OPENAI_API_KEY is present", () => {
+      const result = adapter.validateSecrets(["OPENAI_API_KEY"]);
       expect(result.valid).toBe(true);
       expect(result.missing).toEqual([]);
     });
 
     it("reports missing OPENAI_API_KEY", () => {
-      const result = adapter.validateSecrets(["GITHUB_TOKEN"]);
-      expect(result.valid).toBe(false);
-      expect(result.missing).toContain("OPENAI_API_KEY");
-    });
-
-    it("reports missing GITHUB_TOKEN", () => {
-      const result = adapter.validateSecrets(["OPENAI_API_KEY"]);
-      expect(result.valid).toBe(false);
-      expect(result.missing).toContain("GITHUB_TOKEN");
-    });
-
-    it("reports both missing when empty", () => {
       const result = adapter.validateSecrets([]);
       expect(result.valid).toBe(false);
-      expect(result.missing).toEqual(["OPENAI_API_KEY", "GITHUB_TOKEN"]);
+      expect(result.missing).toEqual(["OPENAI_API_KEY"]);
     });
   });
 
@@ -96,7 +84,7 @@ describe("CodexAdapter", () => {
 
     it("requires correct secrets", () => {
       const config = adapter.buildContainerConfig(baseInput);
-      expect(config.requiredSecrets).toEqual(["OPENAI_API_KEY", "GITHUB_TOKEN"]);
+      expect(config.requiredSecrets).toEqual(["OPENAI_API_KEY"]);
     });
   });
 
