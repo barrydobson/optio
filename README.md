@@ -5,7 +5,7 @@
 [![CI](https://github.com/jonwiggins/optio/actions/workflows/ci.yml/badge.svg)](https://github.com/jonwiggins/optio/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-Optio turns coding tasks into merged pull requests — without human babysitting. Submit a task (manually, from a GitHub Issue, or from Linear), and Optio handles the rest: provisions an isolated environment, runs an AI agent, opens a PR, monitors CI, triggers code review, auto-fixes failures, and merges when everything passes.
+Optio turns coding tasks into merged pull requests — without human intervention. Submit a task (manually, from a GitHub Issue, or from Linear), and Optio handles the rest: provisions an isolated environment, runs an AI agent, opens a PR, monitors CI, triggers code review, auto-fixes failures, and merges when everything passes.
 
 The feedback loop is what makes it different. When CI fails, the agent is automatically resumed with the failure context. When a reviewer requests changes, the agent picks up the review comments and pushes a fix. When everything passes, the PR is squash-merged and the issue is closed. You describe the work; Optio drives it to completion.
 
@@ -21,7 +21,7 @@ The feedback loop is what makes it different. When CI fails, the agent is automa
 
 ## How It Works
 
-```
+```text
 You create a task          Optio runs the agent           Optio closes the loop
 ─────────────────          ──────────────────────         ──────────────────────
 
@@ -53,7 +53,7 @@ You create a task          Optio runs the agent           Optio closes the loop
 
 ## Architecture
 
-```
+```text
 ┌──────────────┐     ┌────────────────────┐     ┌───────────────────────────┐
 │   Web UI     │────→│    API Server      │────→│      Kubernetes           │
 │   Next.js    │     │    Fastify         │     │                           │
@@ -78,7 +78,7 @@ You create a task          Optio runs the agent           Optio closes the loop
 
 ### Task lifecycle
 
-```
+```text
   ┌──────────────────────────────────────────────────┐
   │                     INTAKE                       │
   │                                                  │
@@ -145,7 +145,7 @@ git clone https://github.com/jonwiggins/optio.git && cd optio
 
 That's it. The setup script installs dependencies, builds all Docker images (API, web, and agent presets), deploys the full stack to your local Kubernetes cluster via Helm, and installs metrics-server.
 
-```
+```text
 Web UI ...... http://localhost:30310
 API ......... http://localhost:30400
 ```
@@ -168,7 +168,7 @@ helm uninstall optio -n optio
 
 ## Project Structure
 
-```
+```text
 apps/
   api/          Fastify API server, BullMQ workers, WebSocket endpoints,
                 review service, subtask system, OAuth providers
