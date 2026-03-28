@@ -36,6 +36,8 @@ echo "   Building optio-go..."
 docker build -t optio-go:latest -f images/go.Dockerfile . -q &
 echo "   Building optio-rust..."
 docker build -t optio-rust:latest -f images/rust.Dockerfile . -q &
+echo "   Building optio-optio (operations assistant)..."
+docker build -t optio-optio:latest -f Dockerfile.optio . -q &
 wait
 echo "   Building optio-full..."
 docker build -t optio-full:latest -f images/full.Dockerfile . -q
@@ -71,6 +73,7 @@ if helm status optio -n optio &>/dev/null; then
     --set agent.image.repository=optio-base \
     --set agent.image.tag=latest \
     --set agent.imagePullPolicy=Never \
+    --set optio.image.pullPolicy=Never \
     --set auth.disabled=true \
     --set api.service.type=NodePort \
     --set api.service.nodePort=30400 \
@@ -86,6 +89,7 @@ else
     --set agent.image.repository=optio-base \
     --set agent.image.tag=latest \
     --set agent.imagePullPolicy=Never \
+    --set optio.image.pullPolicy=Never \
     --set auth.disabled=true \
     --set api.service.type=NodePort \
     --set api.service.nodePort=30400 \
@@ -99,6 +103,7 @@ echo "   Helm deployment complete."
 echo "[6/6] Verifying deployment..."
 kubectl wait --namespace optio --for=condition=available deployment/optio-api --timeout=60s 2>/dev/null || true
 kubectl wait --namespace optio --for=condition=available deployment/optio-web --timeout=60s 2>/dev/null || true
+kubectl wait --namespace optio --for=condition=available deployment/optio-optio --timeout=60s 2>/dev/null || true
 
 echo ""
 echo "=== Setup Complete ==="

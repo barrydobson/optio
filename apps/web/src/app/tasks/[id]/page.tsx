@@ -31,6 +31,7 @@ import {
   Copy,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useOptioChatStore } from "@/hooks/use-optio-chat";
 
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -46,6 +47,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const [tokenSaving, setTokenSaving] = useState(false);
   const [dependents, setDependents] = useState<any[]>([]);
   const [showCreateSubtask, setShowCreateSubtask] = useState(false);
+  const optioChat = useOptioChatStore();
   const [newSubtask, setNewSubtask] = useState({
     title: "",
     prompt: "",
@@ -265,6 +267,20 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               Force Redo
             </button>
             <button
+              onClick={() => {
+                const prefill =
+                  task.state === "failed" && task.errorMessage
+                    ? `Task "${task.title}" (#${task.id.slice(0, 8)}) failed with: ${task.errorMessage.slice(0, 200)}`
+                    : `Help me with task "${task.title}" (#${task.id.slice(0, 8)})`;
+                optioChat.setPrefillInput(prefill);
+                optioChat.open();
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary text-xs hover:bg-primary/20 transition-colors"
+            >
+              <Bot className="w-3 h-3" />
+              Ask Optio
+            </button>
+            <button
               onClick={refresh}
               className="p-1.5 rounded-md hover:bg-bg-hover text-text-muted transition-colors"
               title="Refresh"
@@ -366,7 +382,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
       {/* Error panel */}
       {task.errorMessage &&
-        isTerminal &&
+        (isTerminal || task.state === "needs_attention" || task.state === "pr_opened") &&
         (() => {
           const classified = classifyError(task.errorMessage);
           return (

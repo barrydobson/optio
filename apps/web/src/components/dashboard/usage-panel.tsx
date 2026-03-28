@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { Gauge, Clock, Moon } from "lucide-react";
 import { getOffPeakInfo } from "@optio/shared";
+import { TokenRefreshBanner } from "@/components/token-refresh-banner";
 import type { UsageData } from "./types.js";
 
 function UsageMeter({
@@ -56,7 +57,13 @@ function UsageMeter({
 }
 
 export function UsagePanel({ usage }: { usage: UsageData | null }) {
-  if (!usage?.available) return null;
+  if (!usage) return null;
+
+  if (!usage.available) {
+    const isAuthError = usage.error?.includes("401") || usage.error?.includes("expired");
+    if (!isAuthError) return null;
+    return <TokenRefreshBanner />;
+  }
 
   return (
     <div className="rounded-xl border border-border/50 bg-bg-card p-4">

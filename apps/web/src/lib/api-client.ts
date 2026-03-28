@@ -313,7 +313,7 @@ export const api = {
 
   getAuthStatus: () =>
     request<{
-      subscription: { available: boolean; expiresAt?: string; error?: string };
+      subscription: { available: boolean; expiresAt?: string; error?: string; expired?: boolean };
     }>("/api/auth/status"),
 
   refreshAuth: () =>
@@ -896,4 +896,19 @@ export const api = {
     }),
 
   deleteSkill: (id: string) => request<void>(`/api/skills/${id}`, { method: "DELETE" }),
+
+  // Optio Agent Settings
+  getOptioSettings: () => request<{ settings: any }>("/api/optio/settings"),
+
+  updateOptioSettings: (data: {
+    model?: string;
+    systemPrompt?: string;
+    enabledTools?: string[];
+    confirmWrites?: boolean;
+    maxTurns?: number;
+  }) =>
+    request<{ settings: any }>("/api/optio/settings", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 };
