@@ -5,7 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api-client";
 import { Zap, Loader2 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Empty string = relative URLs (gateway setup). Absolute URL = non-gateway (NodePort) setup.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 const PROVIDER_ICONS: Record<string, React.ReactNode> = {
   github: (

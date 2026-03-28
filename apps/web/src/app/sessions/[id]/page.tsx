@@ -21,7 +21,12 @@ import {
   ChevronDown,
   Bot,
 } from "lucide-react";
-import { SessionTerminal } from "@/components/session-terminal";
+import dynamic from "next/dynamic";
+
+const SessionTerminal = dynamic(
+  () => import("@/components/session-terminal").then((m) => m.SessionTerminal),
+  { ssr: false },
+);
 import { SessionChat } from "@/components/session-chat";
 import { SplitPane } from "@/components/split-pane";
 

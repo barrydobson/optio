@@ -65,9 +65,9 @@ spec:
             - name: LOG_LEVEL
               value: {{ .Values.api.env.LOG_LEVEL | quote }}
             - name: API_PUBLIC_URL
-              value: {{ .Values.api.env.API_PUBLIC_URL | quote }}
+              value: {{ .Values.publicUrl | quote }}
             - name: WEB_PUBLIC_URL
-              value: {{ .Values.api.env.WEB_PUBLIC_URL | quote }}
+              value: {{ .Values.publicUrl | quote }}
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
           readinessProbe:

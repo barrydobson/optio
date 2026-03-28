@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Server-side only — use INTERNAL_API_URL (runtime) not NEXT_PUBLIC_API_URL (baked at build time)
+const API_URL = process.env.INTERNAL_API_URL ?? "http://localhost:4000";
 const WEB_URL = process.env.WEB_PUBLIC_URL ?? "";
 const SESSION_COOKIE_NAME = "optio_session";
 const COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days
@@ -58,6 +59,6 @@ export async function GET(request: NextRequest) {
     });
     return response;
   } catch {
-    return NextResponse.redirect(new URL("/login?error=exchange_failed", request.url));
+    return NextResponse.redirect(redirectUrl("/login?error=exchange_failed", request));
   }
 }

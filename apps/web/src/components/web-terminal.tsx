@@ -5,8 +5,7 @@ import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4000";
+import { wsUrl } from "@/lib/utils";
 
 export function WebTerminal({ taskId }: { taskId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,7 +42,7 @@ export function WebTerminal({ taskId }: { taskId: string }) {
     termRef.current = term;
 
     // WebSocket connection
-    const ws = new WebSocket(`${WS_URL}/ws/terminal/${taskId}`);
+    const ws = new WebSocket(wsUrl(`/ws/terminal/${taskId}`));
 
     ws.onopen = () => {
       term.writeln("\x1b[32mConnected to agent terminal\x1b[0m\r\n");

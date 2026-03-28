@@ -198,6 +198,11 @@ ingress:
   #    hosts:
   #      - optio.example.com
 
+# Public URL — the externally-accessible URL for the deployment.
+# Used to derive API_PUBLIC_URL and WEB_PUBLIC_URL (OAuth callbacks, cookie routing).
+# Leave empty for local dev without a gateway/ingress.
+publicUrl: ""  # e.g., https://optio.example.com
+
 # Namespace
 namespace: optio
 

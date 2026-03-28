@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { cn } from "@/lib/utils";
+import { cn, wsUrl } from "@/lib/utils";
 import {
   Send,
   Square,
@@ -18,8 +18,6 @@ import {
   Loader2,
   Lightbulb,
 } from "lucide-react";
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4000";
 
 interface ChatEvent {
   taskId: string;
@@ -76,7 +74,7 @@ export function SessionChat({ sessionId, onCostUpdate, onSendToAgent }: SessionC
 
   // WebSocket connection
   useEffect(() => {
-    const ws = new WebSocket(`${WS_URL}/ws/sessions/${sessionId}/chat`);
+    const ws = new WebSocket(wsUrl(`/ws/sessions/${sessionId}/chat`));
     wsRef.current = ws;
 
     ws.onopen = () => {

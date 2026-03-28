@@ -85,20 +85,20 @@ export class WsClient {
   }
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:4000";
+import { wsUrl } from "./utils.js";
 
 export function createEventsClient(tokenProvider?: TokenProvider): WsClient {
-  return new WsClient(`${WS_URL}/ws/events`, tokenProvider);
+  return new WsClient(wsUrl("/ws/events"), tokenProvider);
 }
 
 export function createLogClient(taskId: string, tokenProvider?: TokenProvider): WsClient {
-  return new WsClient(`${WS_URL}/ws/logs/${taskId}`, tokenProvider);
+  return new WsClient(wsUrl(`/ws/logs/${taskId}`), tokenProvider);
 }
 
 export function createTerminalClient(taskId: string, tokenProvider?: TokenProvider): WsClient {
-  return new WsClient(`${WS_URL}/ws/terminal/${taskId}`, tokenProvider);
+  return new WsClient(wsUrl(`/ws/terminal/${taskId}`), tokenProvider);
 }
 
 export function createSessionTerminalClient(sessionId: string): WsClient {
-  return new WsClient(`${WS_URL}/ws/sessions/${sessionId}/terminal`);
+  return new WsClient(wsUrl(`/ws/sessions/${sessionId}/terminal`));
 }

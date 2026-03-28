@@ -40,3 +40,14 @@ export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength - 1) + "\u2026";
 }
+
+/**
+ * Build a full WebSocket URL for the given path.
+ * Uses NEXT_PUBLIC_WS_URL if baked at build time (non-gateway setups),
+ * otherwise derives from the current page origin (gateway setups).
+ */
+export function wsUrl(path: string): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) return `${process.env.NEXT_PUBLIC_WS_URL}${path}`;
+  const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${window.location.host}${path}`;
+}

@@ -1,4 +1,5 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+// Empty string = relative URLs (gateway setup). Absolute URL = non-gateway (NodePort) setup.
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 /** Read the current workspace ID from localStorage (set by workspace switcher). */
 function getWorkspaceId(): string | null {
@@ -137,7 +138,7 @@ export const api = {
     if (params?.search) qs.set("search", params.search);
     if (params?.logType) qs.set("logType", params.logType);
     const query = qs.toString();
-    const url = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000"}/api/tasks/${id}/logs/export${query ? `?${query}` : ""}`;
+    const url = `${API_URL}/api/tasks/${id}/logs/export${query ? `?${query}` : ""}`;
     return url;
   },
 

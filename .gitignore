@@ -16,3 +16,4 @@ apps/api/.env
 .claude/*
 !.claude/rules/
 !.claude/rules/*.md
+.local.build.sh
