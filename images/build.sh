@@ -2,7 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+TAG="${1:-latest}"
 
 echo "=== Building Optio Agent Images ==="
 
@@ -35,7 +36,7 @@ echo "[8/8] Building optio-full..."
 docker build -t optio-full:latest -f "$SCRIPT_DIR/full.Dockerfile" "$ROOT_DIR"
 
 # Tag optio-base as the default
-docker tag optio-base:latest optio-agent:latest
+docker tag "optio-base:${TAG}" "optio-agent:${TAG}"
 
 echo ""
 echo "=== Images Built ==="
