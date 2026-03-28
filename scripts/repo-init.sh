@@ -4,23 +4,18 @@ set -euo pipefail
 echo "[optio] Initializing repo pod"
 echo "[optio] Repo: ${OPTIO_REPO_URL} (branch: ${OPTIO_REPO_BRANCH})"
 
-# Configure git author for initial clone (overridden per-worktree at task exec time)
-git config --global user.name "${GITHUB_APP_BOT_NAME:-Optio Agent}"
-git config --global user.email "${GITHUB_APP_BOT_EMAIL:-optio-agent@noreply.github.com}"
+# Configure git
+git config --global user.name "Optio Agent"
+git config --global user.email "optio-agent@noreply.github.com"
 
-# Set up GitHub credentials for initial clone.
-# Dynamic credential helpers are re-configured per-task at exec time by the API server.
-if [ -n "${OPTIO_GIT_CREDENTIAL_URL:-}" ] && [ -f /usr/local/bin/optio-git-credential ]; then
-  # Dynamic credential helper — fetches token from Optio API
-  git config --global credential.helper '/usr/local/bin/optio-git-credential'
-  echo "[optio] Dynamic git credential helper configured"
-elif [ -n "${GITHUB_TOKEN:-}" ]; then
-  # Static PAT fallback
+# Set up git credential helper to use GITHUB_TOKEN for all github.com requests
+if [ -n "${GITHUB_TOKEN:-}" ]; then
   git config --global credential.helper store
   echo "https://x-access-token:${GITHUB_TOKEN}@github.com" > ~/.git-credentials
   chmod 600 ~/.git-credentials
-  echo "[optio] Git credentials configured (static token)"
+  echo "[optio] Git credentials configured"
 
+  # Also set up gh CLI (suppress interactive output)
   echo "${GITHUB_TOKEN}" | gh auth login --with-token 2>/dev/null || true
   echo "[optio] GitHub CLI configured"
 fi

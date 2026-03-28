@@ -38,7 +38,6 @@ export async function createTask(input: CreateTaskInput & { workspaceId?: string
       metadata: input.metadata,
       maxRetries: input.maxRetries ?? 3,
       priority: input.priority ?? 100,
-      createdBy: input.createdBy ?? undefined,
       workspaceId: input.workspaceId ?? undefined,
     })
     .returning();
@@ -319,8 +318,8 @@ export async function transitionTask(
 }
 
 async function closeGitHubIssue(repoUrl: string, issueNumber: string, prUrl?: string | null) {
-  const { getGitHubToken } = await import("./github-token-service.js");
-  const token = await getGitHubToken({ server: true });
+  const { retrieveSecret } = await import("./secret-service.js");
+  const token = await retrieveSecret("GITHUB_TOKEN");
   const match = repoUrl.match(/github\.com[/:]([^/]+)\/([^/.]+)/);
   if (!match) return;
   const [, owner, repo] = match;

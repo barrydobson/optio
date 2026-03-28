@@ -90,7 +90,6 @@ export async function taskRoutes(app: FastifyInstance) {
     const { dependsOn, ...taskInput } = input;
     const task = await taskService.createTask({
       ...taskInput,
-      createdBy: req.user?.id,
       workspaceId: req.user?.workspaceId ?? null,
     });
 

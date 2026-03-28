@@ -7,10 +7,9 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   readonly displayName = "Claude Code";
 
   validateSecrets(availableSecrets: string[]): { valid: boolean; missing: string[] } {
-    // ANTHROPIC_API_KEY is only required in api-key mode (checked at runtime).
-    // GITHUB_TOKEN is no longer required — GitHub App credential helper handles
-    // git auth dynamically, and PAT mode injects it via pod env if available.
-    const required: string[] = [];
+    // GITHUB_TOKEN is always required
+    // ANTHROPIC_API_KEY is only required in api-key mode (checked at runtime)
+    const required = ["GITHUB_TOKEN"];
     const missing = required.filter((s) => !availableSecrets.includes(s));
     return { valid: missing.length === 0, missing };
   }
@@ -30,7 +29,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       OPTIO_AUTH_MODE: authMode,
     };
 
-    const requiredSecrets: string[] = [];
+    const requiredSecrets = ["GITHUB_TOKEN"];
     const setupFiles: AgentContainerConfig["setupFiles"] = [];
 
     // Write the task file into the worktree

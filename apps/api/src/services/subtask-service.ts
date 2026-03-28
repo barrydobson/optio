@@ -186,8 +186,8 @@ export async function onSubtaskComplete(subtaskId: string) {
 
       if (repoConfig?.autoMerge) {
         try {
-          const { getGitHubToken } = await import("./github-token-service.js");
-          const githubToken = await getGitHubToken({ server: true });
+          const { retrieveSecret } = await import("./secret-service.js");
+          const githubToken = await retrieveSecret("GITHUB_TOKEN");
 
           // Parse PR number from URL
           const prMatch = parent.prUrl.match(/\/pull\/(\d+)/);

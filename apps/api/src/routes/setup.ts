@@ -2,7 +2,6 @@ import type { FastifyInstance } from "fastify";
 import { checkRuntimeHealth } from "../services/container-service.js";
 import { listSecrets, retrieveSecret } from "../services/secret-service.js";
 import { isSubscriptionAvailable } from "../services/auth-service.js";
-import { isGitHubAppConfigured } from "../services/github-app-service.js";
 
 export async function setupRoutes(app: FastifyInstance) {
   // Check if the system has been set up (secrets exist)
@@ -12,8 +11,7 @@ export async function setupRoutes(app: FastifyInstance) {
 
     const hasAnthropicKey = secretNames.includes("ANTHROPIC_API_KEY");
     const hasOpenAIKey = secretNames.includes("OPENAI_API_KEY");
-    // GitHub App configured at deployment level satisfies the GitHub token requirement
-    const hasGithubToken = secretNames.includes("GITHUB_TOKEN") || isGitHubAppConfigured();
+    const hasGithubToken = secretNames.includes("GITHUB_TOKEN");
 
     // Check if using Max subscription or OAuth token mode
     let usingSubscription = false;

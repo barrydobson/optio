@@ -111,7 +111,6 @@ export async function scheduleRoutes(app: FastifyInstance) {
         maxRetries: config.maxRetries,
         priority: config.priority,
         metadata: { scheduleId: schedule.id, scheduleName: schedule.name, triggeredManually: true },
-        createdBy: req.user?.id,
       });
 
       await taskService.transitionTask(task.id, TaskState.QUEUED, "schedule_manual_trigger");

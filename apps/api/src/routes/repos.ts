@@ -1,7 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import * as repoService from "../services/repo-service.js";
-import { getGitHubToken } from "../services/github-token-service.js";
 
 const createRepoSchema = z.object({
   repoUrl: z.string().min(1),
@@ -78,8 +77,9 @@ export async function repoRoutes(app: FastifyInstance) {
 
     // Auto-detect image preset and test command
     try {
+      const { retrieveSecret } = await import("../services/secret-service.js");
       const { detectRepoConfig } = await import("../services/repo-detect-service.js");
-      const githubToken = await getGitHubToken({ userId: req.user!.id }).catch(() => null);
+      const githubToken = await retrieveSecret("GITHUB_TOKEN").catch(() => null);
       if (githubToken) {
         const detected = await detectRepoConfig(body.repoUrl, githubToken);
         if (detected.imagePreset !== "base" || detected.testCommand) {
@@ -131,8 +131,9 @@ export async function repoRoutes(app: FastifyInstance) {
     }
 
     try {
+      const { retrieveSecret } = await import("../services/secret-service.js");
       const { detectRepoConfig } = await import("../services/repo-detect-service.js");
-      const githubToken = await getGitHubToken({ userId: req.user!.id });
+      const githubToken = await retrieveSecret("GITHUB_TOKEN");
       const detected = await detectRepoConfig(repo.repoUrl, githubToken);
       await repoService.updateRepo(id, {
         imagePreset: detected.imagePreset,
